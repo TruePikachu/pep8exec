@@ -1,5 +1,6 @@
 #include "pep8cpu.hpp"
 #include <cstdio>
+#include <istream>
 #include <ostream>
 #include <stdexcept>
 #include <stdint.h>
@@ -62,7 +63,7 @@ Pep8CPU& Pep8CPU::setSP(uint16_t newSP) {
 	return *this;
 }
 
-bool Pep8CPU::doInstruction() {
+bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 	// Fetch
 	IR.OP=memory.getUB(PC);
 	// Read&Increment
@@ -240,6 +241,37 @@ bool Pep8CPU::doInstruction() {
 			r->setBits(1,15,r->getBits(0,14));
 			r->setBit(0,NZVC.getC());
 			break;
+		case CHARI:
+			is.peek();
+			if(!is.good())
+				throw runtime_error("Tried to read from non-good input");
+			switch(addr) {
+				case ADRd:
+					memory.setSB(IR.PAR,is.get());
+					break;
+				case ADRn:
+					memory.setSB(memory.getUW(IR.PAR),is.get());
+					break;
+				case ADRs:
+					memory.setSB(SP+IR.PAR,is.get());
+					break;
+				case ADRsf:
+					memory.setSB(memory.getUW(SP+IR.PAR),is.get());
+					break;
+				case ADRx:
+					memory.setSB(X.getUW()+IR.PAR,is.get());
+					break;
+				case ADRsx:
+					memory.setSB(SP+X.getUW()+IR.PAR,is.get());
+					break;
+				case ADRsxf:
+					memory.setSB(memory.getUW(SP+IR.PAR)+X.getUW(),is.get());
+					break;
+			}
+			break;
+		case CHARO:
+			os << (char)(parameter&0xFF);
+			break;
 		case RETn:
 			SP += parameter;
 			PC = memory.getUW(SP);
@@ -325,7 +357,7 @@ bool Pep8CPU::doInstruction() {
 	return inst!=STOP;
 }
 
-bool Pep8CPU::doInstruction(uint16_t where) {
+bool Pep8CPU::doInstruction(std::istream&is,std::ostream&os,uint16_t where) {
 	PC=where;
-	return doInstruction();
+	return doInstruction(is,os);
 }

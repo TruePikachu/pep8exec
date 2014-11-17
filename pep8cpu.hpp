@@ -2,6 +2,7 @@
 #define __PEP8CPU_HPP
 class Pep8CPU;
 #include "pep8mem.hpp"
+#include <istream>
 #include <ostream>
 #include <stdint.h>
 
@@ -97,8 +98,8 @@ class Pep8CPU {
 		Pep8CPU&		setPC		(uint16_t);
 		uint16_t		getSP		() const;
 		Pep8CPU&		setSP		(uint16_t);
-		bool			doInstruction	();	// Returns FALSE on STOP
-		bool			doInstruction	(uint16_t);	// Set PC first
+		bool			doInstruction	(std::istream&,std::ostream&);	// Returns FALSE on STOP
+		bool			doInstruction	(std::istream&,std::ostream&,uint16_t);	// Set PC first
 };
 
 #endif
