@@ -18,3 +18,15 @@ r[15] = FLAG.C;
 (note that I just wrote that code before I even have headers written up, so actual code is subject to change)
 
 One more goal is to make a program which is more terminal-interactive than `Pep8Term`; one can't, for instance, specify the program to run on the command line in `Pep8Term`, instead needing to use its "menu". `pep8exec` would allow specifying all the `Pep8Term` options on the command line, permitting much easier automation for testing.
+
+Invocation
+----------
+`pep8exec [parameters] [program_file]`
+
+Parameters:
+* `-iFoo` `--input=Foo`: Read input from the file `Foo`
+* `-oFoo` `--output=Foo`: Write output to the file `Foo`
+* `-tFoo` `--trace=Foo`: Write program trace to the file `Foo` (`-t` default is `STDERR`)
+* `--trap-trace` `--loader-trace` `--no-program-trace`: Adjust what is recorded during the trace
+* `--os=Foo`: Load the OS from the file `Foo`
+* `-x` `--execute`: Execute the program and quit, instead of providing a menu-driven interface
