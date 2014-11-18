@@ -39,7 +39,7 @@ int main() {
 
 	// Load the testing image
 	try {
-		ifstream ti(PKGDIR "/pep8test.pepo");
+		ifstream ti(PKGDIR "/test.pepo");
 		cpu.setSP(mem.getUW(0xFFFA));
 		cpu.setPC(mem.getUW(0xFFFC));
 		while(cpu.doInstruction(ti,clog));
