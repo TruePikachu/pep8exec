@@ -6,6 +6,38 @@ class Pep8CPU;
 #include <ostream>
 #include <stdint.h>
 
+class Pep8Operand {
+	public:
+		typedef enum {
+			ADRnone	= 0xFF,
+			ADRi	= 00,
+			ADRd	= 01,
+			ADRn	= 02,
+			ADRs	= 03,
+			ADRsf	= 04,
+			ADRx	= 05,
+			ADRsx	= 06,
+			ADRsxf	= 07	} AddressMode;
+
+	private:
+		Pep8Memory&	memory;
+		uint16_t	value;
+		AddressMode	type;
+		uint16_t	x;
+		uint16_t	sp;
+	public:
+				 Pep8Operand	(Pep8Memory&,uint16_t,AddressMode,const Pep8Register&,uint16_t);
+		uint16_t	getRef		() const;
+		int16_t		getSW		() const;
+		uint16_t	getUW		() const;
+		int8_t		getSB		() const;
+		uint8_t		getUB		() const;
+		Pep8Operand&	setSW		(int16_t);
+		Pep8Operand&	setUW		(uint16_t);
+		Pep8Operand&	setSB		(int8_t);
+		Pep8Operand&	setUB		(uint8_t);
+};
+
 class Pep8CPU {
 	friend std::ostream& operator<<(std::ostream&,const Pep8CPU&);
 	private:
@@ -61,18 +93,6 @@ class Pep8CPU {
 			LDBYTEr	= 0xD0,
 			STr	= 0xE0,
 			STBYTEr	= 0xF0	} Instruction;
-		typedef enum {
-			ADRnone	= 0xFF,
-			ADRi	= 00,
-			ADRd	= 01,
-			ADRn	= 02,
-			ADRs	= 03,
-			ADRsf	= 04,
-			ADRx	= 05,
-			ADRsx	= 06,
-			ADRsxf	= 07	} AddressMode;
-
-
 
 		Pep8Memory&	memory;
 		Pep8Flags	NZVC;

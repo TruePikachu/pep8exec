@@ -1,10 +1,84 @@
 #include "pep8cpu.hpp"
+#include "pep8mem.hpp"
 #include <cstdio>
 #include <istream>
 #include <ostream>
 #include <stdexcept>
 #include <stdint.h>
 using namespace std;
+
+Pep8Operand::Pep8Operand(Pep8Memory&memory,uint16_t value,AddressMode type,const Pep8Register&X,uint16_t SP) : memory(memory),value(value),type(type),x(X.getUW()),sp(SP) {}
+
+uint16_t Pep8Operand::getRef() const {
+	switch(type) {
+		case ADRd:
+			return value;
+		case ADRn:
+			return memory.getUW(value);
+		case ADRs:
+			return sp+value;
+		case ADRsf:
+			return memory.getUW(sp+value);
+		case ADRx:
+			return x+value;
+		case ADRsx:
+			return x+sp+value;
+		case ADRsxf:
+			return memory.getUW(sp+value)+x;
+		default:
+			throw Pep8DataException("Invalid operand type");
+	}
+}
+
+int16_t Pep8Operand::getSW() const {
+	if(type==ADRi)
+		return (int16_t)value;
+	else
+		return memory.getSW(getRef());
+}
+
+uint16_t Pep8Operand::getUW() const {
+	if(type==ADRi)
+		return value;
+	else
+		return memory.getUW(getRef());
+}
+
+int8_t Pep8Operand::getSB() const {
+	if(type==ADRi)
+		return (int8_t)value&0xFF;
+	else
+		return memory.getSB(getRef());
+}
+
+uint8_t Pep8Operand::getUB() const {
+	if(type==ADRi)
+		return (uint8_t)value&0xFF;
+	else
+		return memory.getUB(getRef());
+}
+
+Pep8Operand& Pep8Operand::setSW(int16_t v) {
+	memory.setSW(getRef(),v);
+	return *this;
+}
+
+Pep8Operand& Pep8Operand::setUW(uint16_t v) {
+	        memory.setUW(getRef(),v);
+		        return *this;
+}
+
+Pep8Operand& Pep8Operand::setSB(int8_t v) {
+	        memory.setSB(getRef(),v);
+		        return *this;
+}
+
+Pep8Operand& Pep8Operand::setUB(uint8_t v) {
+	        memory.setUB(getRef(),v);
+		        return *this;
+}
+
+//////////
 
 Pep8CPU::Pep8CPU(Pep8Memory&memory) : memory(memory) {
 	PC=0;
@@ -79,7 +153,7 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 		inst=(Instruction)(IR.OP&0xF8);
 	else
 		inst=(Instruction)(IR.OP&0xF0);
-	AddressMode addr;
+	Pep8Operand::AddressMode addr;
 	switch(inst) {
 		case BR:
 		case BRLE:
@@ -92,9 +166,9 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 		case BRC:
 		case CALL:
 			if(IR.OP&1)
-				addr=ADRx;
+				addr=Pep8Operand::ADRx;
 			else
-				addr=ADRi;
+				addr=Pep8Operand::ADRi;
 			break;
 		case NOP:
 		case DECI:
@@ -113,12 +187,12 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 		case LDBYTEr:
 		case STr:
 		case STBYTEr:
-			addr=(AddressMode)(IR.OP&07);
+			addr=(Pep8Operand::AddressMode)(IR.OP&07);
 			break;
 		default:
-			addr=ADRnone;
+			addr=Pep8Operand::ADRnone;
 	}
-	if(addr!=ADRnone) {
+	if(addr!=Pep8Operand::ADRnone) {
 		IR.PAR=memory.getUW(PC);
 		PC+=2;
 	}
@@ -134,35 +208,7 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 			r=&X;
 		else
 			r=&A;
-	uint16_t parameter;
-	switch(addr) {
-		case ADRnone:
-			break;
-		case ADRi:
-			parameter=IR.PAR;
-			break;
-		case ADRd:
-			parameter=memory.getUW(IR.PAR);
-			break;
-		case ADRn:
-			parameter=memory.getUW(memory.getUW(IR.PAR));
-			break;
-		case ADRs:
-			parameter=memory.getUW(SP+IR.PAR);
-			break;
-		case ADRsf:
-			parameter=memory.getUW(memory.getUW(SP+IR.PAR));
-			break;
-		case ADRx:
-			parameter=memory.getUW(X.getUW()+IR.PAR);
-			break;
-		case ADRsx:
-			parameter=memory.getUW(SP+X.getUW()+IR.PAR);
-			break;
-		case ADRsxf:
-			parameter=memory.getUW(memory.getUW(SP+IR.PAR)+X.getUW());
-			break;
-	}
+	Pep8Operand operand(memory,IR.PAR,addr,X,SP);
 	switch(inst) {
 		case STOP:
 			break;
@@ -181,44 +227,44 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 			A.setBits(12,15,NZVC.getBits(0,3));
 			break;
 		case BR:
-			PC = parameter;
+			PC = operand.getUW();
 			break;
 		case BRLE:
 			if(NZVC.getN() || NZVC.getZ())
-				PC = parameter;
+				PC = operand.getUW();
 			break;
 		case BRLT:
 			if(NZVC.getN())
-				PC = parameter;
+				PC = operand.getUW();
 			break;
 		case BREQ:
 			if(NZVC.getZ())
-				PC = parameter;
+				PC = operand.getUW();
 			break;
 		case BRNE:
 			if(!NZVC.getZ())
-				PC = parameter;
+				PC = operand.getUW();
 			break;
 		case BRGE:
 			if(!NZVC.getN())
-				PC = parameter;
+				PC = operand.getUW();
 			break;
 		case BRGT:
 			if(!NZVC.getN() && !NZVC.getZ())
-				PC = parameter;
+				PC = operand.getUW();
 			break;
 		case BRV:
 			if(NZVC.getV())
-				PC = parameter;
+				PC = operand.getUW();
 			break;
 		case BRC:
 			if(NZVC.getC())
-				PC = parameter;
+				PC = operand.getUW();
 			break;
 		case CALL:
 			SP -= 2;
 			memory.setUW(SP,PC);
-			PC = parameter;
+			PC = operand.getUW();
 			break;
 		case NOTr:
 			r->setUW(~r->getUW());
@@ -258,115 +304,49 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 			is.peek();
 			if(!is.good())
 				throw runtime_error("Tried to read from non-good input");
-			switch(addr) {
-				case ADRd:
-					memory.setSB(IR.PAR,is.get());
-					break;
-				case ADRn:
-					memory.setSB(memory.getUW(IR.PAR),is.get());
-					break;
-				case ADRs:
-					memory.setSB(SP+IR.PAR,is.get());
-					break;
-				case ADRsf:
-					memory.setSB(memory.getUW(SP+IR.PAR),is.get());
-					break;
-				case ADRx:
-					memory.setSB(X.getUW()+IR.PAR,is.get());
-					break;
-				case ADRsx:
-					memory.setSB(SP+X.getUW()+IR.PAR,is.get());
-					break;
-				case ADRsxf:
-					memory.setSB(memory.getUW(SP+IR.PAR)+X.getUW(),is.get());
-					break;
-			}
+			operand.setUB(is.get());
 			break;
 		case CHARO:
-			os << (char)(parameter&0xFF);
+			os << (char)operand.getUB();
 			break;
 		case RETn:
-			SP += parameter;
+			SP += operand.getUW();
 			PC = memory.getUW(SP);
 			SP += 2;
 			break;
 		case ANDr:
-			r->setUW(r->getUW() & parameter);
+			r->setUW(r->getUW() & operand.getUW());
 			NZVC.setN(r->getBit(15));
 			NZVC.setZ(r->getUW()==0);
 			break;
 		case ORr:
-			r->setUW(r->getUW() | parameter);
+			r->setUW(r->getUW() | operand.getUW());
 			NZVC.setN(r->getBit(15));
 			NZVC.setZ(r->getUW()==0);
 			break;
 		case CPr:
 			uint16_t tmp;
-			tmp = r->getUW() - parameter;
+			tmp = r->getUW() - operand.getUW();
 			NZVC.setN(tmp&0x8000);
 			NZVC.setZ(tmp==0);
-			NZVC.setV(r->getSW() < (int16_t)parameter);
-			NZVC.setC(r->getUW() < parameter);
+			NZVC.setV(r->getSW() < operand.getSW());
+			NZVC.setC(r->getUW() < operand.getUW());
 			break;
 		case LDr:
-			r->setUW(parameter);
+			r->setUW(operand.getUW());
 			NZVC.setN(r->getBit(15));
 			NZVC.setZ(r->getUW()==0);
 			break;
 		case LDBYTEr:
-			r->setUB(parameter);
+			r->setUB(operand.getUB());
 			NZVC.setN(r->getBit(15));
 			NZVC.setZ(r->getUW()==0);
 			break;
 		case STr:
-			switch(addr) {
-				case ADRd:
-					memory.setUW(IR.PAR,r->getUW());
-					break;
-				case ADRn:
-					memory.setUW(memory.getUW(IR.PAR),r->getUW());
-					break;
-				case ADRs:
-					memory.setUW(SP+IR.PAR,r->getUW());
-					break;
-				case ADRsf:
-					memory.setUW(memory.getUW(SP+IR.PAR),r->getUW());
-					break;
-				case ADRx:
-					memory.setUW(X.getUW()+IR.PAR,r->getUW());
-					break;
-				case ADRsx:
-					memory.setUW(SP+X.getUW()+IR.PAR,r->getUW());
-					break;
-				case ADRsxf:
-					memory.setUW(memory.getUW(SP+IR.PAR)+X.getUW(),r->getUW());
-					break;
-			}
+			operand.setUW(r->getUW());
 			break;
 		case STBYTEr:
-			switch(addr) {
-				case ADRd:
-					memory.setUB(IR.PAR,r->getUB());
-					break;
-				case ADRn:
-					memory.setUB(memory.getUW(IR.PAR),r->getUB());
-					break;
-				case ADRs:
-					memory.setUB(SP+IR.PAR,r->getUB());
-					break;
-				case ADRsf:
-					memory.setUB(memory.getUW(SP+IR.PAR),r->getUB());
-					break;
-				case ADRx:
-					memory.setUB(X.getUW()+IR.PAR,r->getUB());
-					break;
-				case ADRsx:
-					memory.setUB(SP+X.getUW()+IR.PAR,r->getUB());
-					break;
-				case ADRsxf:
-					memory.setUB(memory.getUW(SP+IR.PAR)+X.getUW(),r->getUB());
-					break;
-			}
+			operand.setUB(r->getUB());
 			break;
 		default:
 			char errorBuf[64];
