@@ -24,6 +24,7 @@ class Pep8DataException : public std::exception {
 class Pep8Memory {
 	private:
 		uint8_t*	image;
+		size_t		romSize;
 	public:
 				 Pep8Memory	();
 				 Pep8Memory	(const Pep8Memory&);
@@ -41,6 +42,9 @@ class Pep8Memory {
 		Pep8Memory&	setUW		(off_t,uint16_t);
 		Pep8Memory&	setSB		(off_t,int8_t);
 		Pep8Memory&	setUB		(off_t,uint8_t);
+		size_t		getRamSize	() const;
+		size_t		getRomSize	() const;
+		bool		writable	(off_t) const;
 };
 
 class Pep8Bits {
