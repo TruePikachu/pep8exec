@@ -98,44 +98,45 @@ Pep8Bits::Pep8Bits(size_t nBits) : nBits(nBits) {
 bool Pep8Bits::getBit(int i) const {
 	if(i<0 || i>=nBits)
 		throw Pep8DataException("Pep8Bits::getBit(): Tried to access an out-of-range bit");
-	return bits & (1 << (bits-i-1));
+	return 0!=(bits & (1 << (nBits-i-1)));
 }
 
 Pep8Bits& Pep8Bits::setBit(int i, bool v) {
 	if(v)
-		bits |= 1<<(bits-i-1);
+		bits |= 1<<(nBits-i-1);
 	else
-		bits &= ~(1<<(bits-i-1));
+		bits &= ~(1<<(nBits-i-1));
 	return *this;
 }
 
 unsigned Pep8Bits::getBits(int a,int b) const {
 	unsigned result=0;
-	int min,max;
+	int msb,lsb;
 	if(a<b) {
-		min=a;
-		max=b;
+		msb=a;
+		lsb=b;
 	} else {
-		min=b;
-		max=a;
+		msb=b;
+		lsb=a;
 	}
-	for(int i=min;i<=max;i++) {
-		result <<= 1;
-		result |= getBit(i);
+	for(int i=msb;i<=lsb;i++) {
+		result *= 2;
+		if(getBit(i))
+			result++;
 	}
 	return result;
 }
 
 Pep8Bits& Pep8Bits::setBits(int a,int b,unsigned n) {
-	int min,max;
+	int msb,lsb;
 	if(a<b) {
-		min=a;
-		max=b;
+		msb=a;
+		lsb=b;
 	} else {
-		min=b;
-		max=a;
+		msb=b;
+		lsb=a;
 	}
-	for(int i=max;i>=min;i--) {
+	for(int i=lsb;i>=msb;i--) {
 		setBit(i,n&1);
 		n >>= 1;
 	}

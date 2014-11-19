@@ -9,6 +9,10 @@ using namespace std;
 
 Pep8Operand::Pep8Operand(Pep8Memory&memory,uint16_t value,AddressMode type,const Pep8Register&X,uint16_t SP) : memory(memory),value(value),type(type),x(X.getUW()),sp(SP) {}
 
+Pep8Operand::AddressMode Pep8Operand::getAddrMode() const {
+	return type;
+}
+
 uint16_t Pep8Operand::getRef() const {
 	switch(type) {
 		case ADRd:
@@ -212,6 +216,7 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 	uint16_t tmpUWORD;
 	switch(inst) {
 		case STOP:
+			return false;
 			break;
 		case RETTR:
 			NZVC.setBits(0,3,memory.getUW(SP));
@@ -307,7 +312,6 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 		case DECO:
 		case STRO: {	uint16_t T = memory.getUW(0xFFFA);
 				memory.setUB(T-1,IR.OP);
-				memory.setUW(T-0,IR.PAR);	// ?????
 				memory.setUW(T-3,SP);
 				memory.setUW(T-5,PC);
 				memory.setUW(T-7,X.getUW());
@@ -326,7 +330,7 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 			os << (char)operand.getUB();
 			break;
 		case RETn:
-			SP += operand.getUW();
+			SP += IR.OP & 0x7;
 			PC = memory.getUW(SP);
 			SP += 2;
 			break;

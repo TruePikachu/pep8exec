@@ -27,6 +27,7 @@ class Pep8Operand {
 		uint16_t	sp;
 	public:
 				 Pep8Operand	(Pep8Memory&,uint16_t,AddressMode,const Pep8Register&,uint16_t);
+		AddressMode	getAddrMode	() const;
 		uint16_t	getRef		() const;
 		int16_t		getSW		() const;
 		uint16_t	getUW		() const;
