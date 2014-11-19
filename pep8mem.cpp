@@ -1,9 +1,12 @@
 #include "pep8mem.hpp"
+#include <cstdio>
 #include <cstring>
 #include <exception>
+#include <istream>
 #include <ostream>
 #include <stdint.h>
 #include <string>
+#include <vector>
 using namespace std;
 
 Pep8DataException::Pep8DataException(std::string str) : whatIs(str) {};
@@ -46,6 +49,25 @@ const uint8_t* Pep8Memory::getImage() const {
 
 uint8_t* Pep8Memory::getImage() {
 	return image;
+}
+
+Pep8Memory& Pep8Memory::loadOS(std::istream&os) {
+	// Clear the image
+	for(int i=0;i<0x10000;i++)
+		image[i]=0;
+	vector< uint8_t > imageBuffer;
+	char readBuf[4];
+	readBuf[3]=0;
+	uint8_t newByte;
+	while(os.good()) {
+		os.read(readBuf,3);
+		if(!sscanf(readBuf,"%02X",&newByte))
+			break;
+		imageBuffer.push_back(newByte);
+	}
+	for(off_t where=0;where<imageBuffer.size();where++)
+		setUB(where+0x10000-imageBuffer.size(),imageBuffer[where]);
+	return *this;
 }
 
 int16_t Pep8Memory::getSW(off_t i) const {

@@ -23,18 +23,7 @@ int main() {
 		ifstream os(PKGDIR "/pep8os.pepo");
 		if(!os.good())
 			throw runtime_error("Couldn't open OS file");
-		vector< uint8_t > image;
-		while(os.good()) {
-			char buf[4];
-			os.read(buf,3);
-			buf[3]='\0';
-			uint8_t newByte;
-			if(!sscanf(buf,"%02X",&newByte))
-				break;
-			image.push_back(newByte);
-		}
-		for(off_t where=0;where<image.size();where++)
-			mem.setUB(where+0x10000-image.size(),image[where]);
+		mem.loadOS(os);
 		os.close();
 	} catch (exception& e) {
 		diag((string)"OS load failed: "+e.what());
@@ -66,7 +55,7 @@ int main() {
 
 		sprintf(buf,"diff -q %1$s/tests/%2$s.out %2$s.tmp",PKGDIR,tests[i]);
 		bool isOK = !system(buf);
-		sprintf(buf,"rm %s/tests/%s.tmp",PKGDIR,tests[i]);
+		sprintf(buf,"rm -rf %s/tests/%s.tmp",PKGDIR,tests[i]);
 		if(isOK)
 			system(buf);
 		ok(isOK,tests[i]);

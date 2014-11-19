@@ -6,6 +6,7 @@ class Pep8Bits;
 class Pep8Flags;
 class Pep8Register;
 #include <exception>
+#include <istream>
 #include <ostream>
 #include <stdint.h>
 #include <string>
@@ -31,6 +32,7 @@ class Pep8Memory {
 
 		const uint8_t*	getImage	() const;
 		uint8_t*	getImage	();
+		Pep8Memory&	loadOS		(std::istream&);
 		int16_t		getSW		(off_t) const;
 		uint16_t	getUW		(off_t) const;
 		int8_t		getSB		(off_t) const;
