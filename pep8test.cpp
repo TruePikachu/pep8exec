@@ -1,16 +1,20 @@
 #include "pep8cpu.hpp"
 #include "pep8mem.hpp"
 #include <cstdio>
+#include <cstdlib>
 #include <exception>
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 #include <tap++/tap++.h>
 #include <vector>
 using namespace std;
 using namespace TAP;
 
+static const char* tests[] = {"test01"};
+
 int main() {
-	plan(37);
+	plan(sizeof(tests)/sizeof(char*));
 	Pep8Memory mem;
 	Pep8CPU cpu(mem);
 
@@ -31,46 +35,39 @@ int main() {
 			mem.setUB(where+0x10000-image.size(),image[where]);
 		os.close();
 	} catch (exception& e) {
-		fail((string)"OS Load: "+e.what());
-		skip(36);
+		diag((string)"OS load failed: "+e.what());
 		return exit_status();
 	}
-	ok(true,"OS Load");
 
-	// Load the testing image
-	try {
-		ifstream ti(PKGDIR "/test.pepo");
+	// Run each test
+	for(int i=0;i<sizeof(tests)/sizeof(char*);i++) {
+		char buf[1024];
+		
+		sprintf(buf,"%s/tests/%s.pepo",PKGDIR,tests[i]);
+		ifstream src(buf);
+		if(!src.good())
+			throw logic_error((string)"Couldn't get test file "+tests[i]+".pepo");
 		cpu.setSP(mem.getUW(0xFFFA));
 		cpu.setPC(mem.getUW(0xFFFC));
-		while(cpu.doInstruction(ti,clog));
-		ok(true,"Image Load");
-	} catch (exception& e) {
-		fail((string)"Image Load: "+e.what());
-		diag("Falling back to MANUAL load");
-		FILE *ti = fopen(PKGDIR "/test.pepo","r");
-		uint8_t* pMem = mem.getImage();
-		while(fscanf(ti,"%02X",pMem))
-			pMem++;
-		diag("Loaded ",pMem-mem.getImage()," bytes");
-		fclose(ti);
-	}
+		while(cpu.doInstruction(src,clog));
+		src.close();
 
-	// Run the testing image
-	stringstream output;
-	try {
+		sprintf(buf,"%s/tests/%s.in",PKGDIR,tests[i]);
+		ifstream in(buf);
+		sprintf(buf,"%s/tests/%s.tmp",PKGDIR,tests[i]);
+		ofstream out(buf);
 		cpu.setSP(mem.getUW(0xFFF8));
 		cpu.setPC(0x0000);
-		while(cpu.doInstruction(output,output));
-	} catch (exception& e) {
-		fail((string)"Test Image: "+e.what());
-		skip(34);
-		return exit_status();
-	}
-	ok(true,"Test Image");
+		while(cpu.doInstruction(in,out));
+		in.close();
+		out.close();
 
-	// Check the testing image output
-	const char* keywords[] = {"STOP ","MOVSPA ","MOVFLGA ","BR ","BRLE ","BRLT ","BREQ ","BRNE ","BRGE ","BRGT ","BRV ","BRC ","CALL ","NOTr ","NEGr ","ASLr ","ASRr ","ROLr ","RORr ","DECO ","STRO ","CHARO ","RETn ","ADDSP ","SUBSP ","ADDr ","SUBr ","ANDr ","ORr ","CPr ","LDr ","LDBYTEr ","STr ","STBYTEr "};
-	for(int i=0;i<34;i++)
-		ok(output.str().find(keywords[i])!=string::npos,keywords[i]);
+		sprintf(buf,"diff -q %1$s/tests/%2$s.out %1$s/tests/%2$s.tmp",PKGDIR,tests[i]);
+		bool isOK = !system(buf);
+		sprintf(buf,"rm %s/tests/%s.tmp",PKGDIR,tests[i]);
+		if(isOK)
+			system(buf);
+		ok(isOK,tests[i]);
+	}
 	return exit_status();
 }
