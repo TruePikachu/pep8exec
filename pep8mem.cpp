@@ -98,14 +98,14 @@ Pep8Bits::Pep8Bits(size_t nBits) : nBits(nBits) {
 bool Pep8Bits::getBit(int i) const {
 	if(i<0 || i>=nBits)
 		throw Pep8DataException("Pep8Bits::getBit(): Tried to access an out-of-range bit");
-	return bits & (1 << i);
+	return bits & (1 << (bits-i-1));
 }
 
 Pep8Bits& Pep8Bits::setBit(int i, bool v) {
 	if(v)
-		bits |= 1<<i;
+		bits |= 1<<(bits-i-1);
 	else
-		bits &= ~(1<<i);
+		bits &= ~(1<<(bits-i-1));
 	return *this;
 }
 

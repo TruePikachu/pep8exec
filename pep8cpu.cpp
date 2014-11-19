@@ -209,6 +209,7 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 		else
 			r=&A;
 	Pep8Operand operand(memory,IR.PAR,addr,X,SP);
+	uint16_t tmpUWORD;
 	switch(inst) {
 		case STOP:
 			break;
@@ -300,6 +301,21 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 			r->setBits(1,15,r->getBits(0,14));
 			r->setBit(0,NZVC.getC());
 			break;
+		case NOPn:
+		case NOP:
+		case DECI:
+		case DECO:
+		case STRO: {	uint16_t T = memory.getUW(0xFFFA);
+				memory.setUB(T-1,IR.OP);
+				memory.setUW(T-0,IR.PAR);	// ?????
+				memory.setUW(T-3,SP);
+				memory.setUW(T-5,PC);
+				memory.setUW(T-7,X.getUW());
+				memory.setUW(T-9,A.getUW());
+				memory.setUB(T-10,NZVC.getBits(0,3));
+				SP = T-10;
+				PC = memory.getUW(0xFFFE);
+				break;	}
 		case CHARI:
 			is.peek();
 			if(!is.good())
@@ -314,6 +330,38 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 			PC = memory.getUW(SP);
 			SP += 2;
 			break;
+		case ADDSP:
+			tmpUWORD = SP;
+			SP += operand.getUW();
+			NZVC.setN((int16_t)SP < 0);
+			NZVC.setZ(SP==0);
+			NZVC.setV(((int)tmpUWORD+operand.getUW() < -0x8000)||((int)tmpUWORD+operand.getUW() > 0x7FFF));
+			NZVC.setC(((int)tmpUWORD+operand.getUW() < 0) || ((int)tmpUWORD+operand.getUW() > 0xFFFF));
+			break;
+		case SUBSP:
+			tmpUWORD = SP;
+			SP -= operand.getUW();
+			NZVC.setN((int16_t)SP < 0);
+			NZVC.setZ(SP==0);
+			NZVC.setV(((int)tmpUWORD-operand.getUW() < -0x8000)||((int)tmpUWORD-operand.getUW() > 0x7FFF));
+			NZVC.setC(((int)tmpUWORD-operand.getUW() < 0) || ((int)tmpUWORD-operand.getUW() > 0xFFFF));
+			break;
+		case ADDr:
+			tmpUWORD = r->getUW();
+			r->setUW(tmpUWORD+operand.getUW());
+			NZVC.setN(r->getSW() < 0);
+			NZVC.setZ(r->getUW()==0);
+			NZVC.setV(((int)tmpUWORD+operand.getUW() < -0x8000)||((int)tmpUWORD+operand.getUW() > 0x7FFF));
+			NZVC.setC(((int)tmpUWORD+operand.getUW() < 0) || ((int)tmpUWORD+operand.getUW() > 0xFFFF));
+			break;
+		case SUBr:
+			tmpUWORD = r->getUW();
+			r->setUW(tmpUWORD-operand.getUW());
+			NZVC.setN(r->getSW() < 0);
+			NZVC.setZ(r->getUW()==0);
+			NZVC.setV(((int)tmpUWORD-operand.getUW() < -0x8000)||((int)tmpUWORD-operand.getUW() > 0x7FFF));
+			NZVC.setC(((int)tmpUWORD-operand.getUW() < 0) || ((int)tmpUWORD-operand.getUW() > 0xFFFF));
+			break;
 		case ANDr:
 			r->setUW(r->getUW() & operand.getUW());
 			NZVC.setN(r->getBit(15));
@@ -325,10 +373,9 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 			NZVC.setZ(r->getUW()==0);
 			break;
 		case CPr:
-			uint16_t tmp;
-			tmp = r->getUW() - operand.getUW();
-			NZVC.setN(tmp&0x8000);
-			NZVC.setZ(tmp==0);
+			tmpUWORD = r->getUW() - operand.getUW();
+			NZVC.setN(tmpUWORD&0x8000);
+			NZVC.setZ(tmpUWORD==0);
 			NZVC.setV(r->getSW() < operand.getSW());
 			NZVC.setC(r->getUW() < operand.getUW());
 			break;
