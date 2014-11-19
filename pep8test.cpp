@@ -43,12 +43,17 @@ int main() {
 		cpu.setSP(mem.getUW(0xFFFA));
 		cpu.setPC(mem.getUW(0xFFFC));
 		while(cpu.doInstruction(ti,clog));
+		ok(true,"Image Load");
 	} catch (exception& e) {
 		fail((string)"Image Load: "+e.what());
-		skip(35);
-		return exit_status();
+		diag("Falling back to MANUAL load");
+		FILE *ti = fopen(PKGDIR "/test.pepo","r");
+		uint8_t* pMem = mem.getImage();
+		while(fscanf(ti,"%02X",pMem))
+			pMem++;
+		diag("Loaded ",pMem-mem.getImage()," bytes");
+		fclose(ti);
 	}
-	ok(true,"Image Load");
 
 	// Run the testing image
 	stringstream output;
@@ -57,7 +62,7 @@ int main() {
 		cpu.setPC(0x0000);
 		while(cpu.doInstruction(output,output));
 	} catch (exception& e) {
-		fail((string)"Test Image"+e.what());
+		fail((string)"Test Image: "+e.what());
 		skip(34);
 		return exit_status();
 	}

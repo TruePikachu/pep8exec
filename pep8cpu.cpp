@@ -124,7 +124,7 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 	}
 	// Execute
 	Pep8Register* r = NULL;
-	if(BR<=inst && inst<=CALL)
+	if(NOTr<=inst && inst<=RORr)
 		if(IR.OP&1)
 			r=&X;
 		else
@@ -225,6 +225,19 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 			NZVC.setN(r->getBit(0));
 			NZVC.setZ(r->getUW()==0);
 			break;
+		case NEGr:
+			NZVC.setV(!r->getBit(0));
+			r->setUW(~r->getUW() + 1);
+			NZVC.setN(r->getBit(0));
+			NZVC.setZ(r->getUW()==0);
+			break;
+		case ASLr:
+			NZVC.setC(r->getBit(0));
+			r->setBits(0,14,r->getBits(1,15));
+			r->setBit(15,false);
+			NZVC.setN(r->getBit(0));
+			NZVC.setZ(r->getUW()==0);
+			break;
 		case ASRr:
 			NZVC.setC(r->getBit(15));
 			r->setBits(1,15,r->getBits(0,14));
@@ -286,6 +299,14 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 			r->setUW(r->getUW() | parameter);
 			NZVC.setN(r->getBit(15));
 			NZVC.setZ(r->getUW()==0);
+			break;
+		case CPr:
+			uint16_t tmp;
+			tmp = r->getUW() - parameter;
+			NZVC.setN(tmp&0x8000);
+			NZVC.setZ(tmp==0);
+			NZVC.setV(r->getSW() < (int16_t)parameter);
+			NZVC.setC(r->getUW() < parameter);
 			break;
 		case LDr:
 			r->setUW(parameter);
