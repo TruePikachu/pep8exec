@@ -11,7 +11,7 @@
 using namespace std;
 using namespace TAP;
 
-static const char* tests[] = {"test01"};
+static const char* tests[] = {"test01","inputs"};
 
 int main() {
 	plan(sizeof(tests)/sizeof(char*));
