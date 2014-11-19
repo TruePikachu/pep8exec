@@ -21,6 +21,8 @@ int main() {
 	// Load the OS
 	try {
 		ifstream os(PKGDIR "/pep8os.pepo");
+		if(!os.good())
+			throw runtime_error("Couldn't open OS file");
 		vector< uint8_t > image;
 		while(os.good()) {
 			char buf[4];
@@ -54,7 +56,7 @@ int main() {
 
 		sprintf(buf,"%s/tests/%s.in",PKGDIR,tests[i]);
 		ifstream in(buf);
-		sprintf(buf,"%s/tests/%s.tmp",PKGDIR,tests[i]);
+		sprintf(buf,"%s.tmp",tests[i]);
 		ofstream out(buf);
 		cpu.setSP(mem.getUW(0xFFF8));
 		cpu.setPC(0x0000);
@@ -62,7 +64,7 @@ int main() {
 		in.close();
 		out.close();
 
-		sprintf(buf,"diff -q %1$s/tests/%2$s.out %1$s/tests/%2$s.tmp",PKGDIR,tests[i]);
+		sprintf(buf,"diff -q %1$s/tests/%2$s.out %2$s.tmp",PKGDIR,tests[i]);
 		bool isOK = !system(buf);
 		sprintf(buf,"rm %s/tests/%s.tmp",PKGDIR,tests[i]);
 		if(isOK)
