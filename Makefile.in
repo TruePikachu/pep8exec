@@ -15,6 +15,7 @@
 
 @SET_MAKE@
 
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -32,6 +33,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+noinst_PROGRAMS = pep8exec$(EXEEXT)
 check_PROGRAMS = pep8test$(EXEEXT)
 TESTS = pep8test$(EXEEXT)
 subdir = .
@@ -47,6 +49,11 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
 mkinstalldirs = $(install_sh) -d
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
+PROGRAMS = $(noinst_PROGRAMS)
+am_pep8exec_OBJECTS = pep8exec.$(OBJEXT) pep8cpu.$(OBJEXT) \
+	pep8mem.$(OBJEXT)
+pep8exec_OBJECTS = $(am_pep8exec_OBJECTS)
+pep8exec_LDADD = $(LDADD)
 am_pep8test_OBJECTS = pep8test.$(OBJEXT) pep8cpu.$(OBJEXT) \
 	pep8mem.$(OBJEXT)
 pep8test_OBJECTS = $(am_pep8test_OBJECTS)
@@ -60,8 +67,8 @@ CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
-SOURCES = $(pep8test_SOURCES)
-DIST_SOURCES = $(pep8test_SOURCES)
+SOURCES = $(pep8exec_SOURCES) $(pep8test_SOURCES)
+DIST_SOURCES = $(pep8exec_SOURCES) $(pep8test_SOURCES)
 HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
@@ -161,6 +168,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+pep8exec_SOURCES = pep8exec.cpp pep8cpu.cpp pep8mem.cpp
 pep8test_SOURCES = pep8test.cpp pep8cpu.cpp pep8mem.cpp
 pep8test_LDADD = -ltap++
 AM_CXXFLAGS = -DPKGDIR=\"$(top_srcdir)\"
@@ -207,6 +215,12 @@ $(am__aclocal_m4_deps):
 
 clean-checkPROGRAMS:
 	-test -z "$(check_PROGRAMS)" || rm -f $(check_PROGRAMS)
+
+clean-noinstPROGRAMS:
+	-test -z "$(noinst_PROGRAMS)" || rm -f $(noinst_PROGRAMS)
+pep8exec$(EXEEXT): $(pep8exec_OBJECTS) $(pep8exec_DEPENDENCIES) 
+	@rm -f pep8exec$(EXEEXT)
+	$(CXXLINK) $(pep8exec_OBJECTS) $(pep8exec_LDADD) $(LIBS)
 pep8test$(EXEEXT): $(pep8test_OBJECTS) $(pep8test_DEPENDENCIES) 
 	@rm -f pep8test$(EXEEXT)
 	$(CXXLINK) $(pep8test_OBJECTS) $(pep8test_LDADD) $(LIBS)
@@ -218,6 +232,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pep8cpu.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pep8exec.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pep8mem.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pep8test.Po@am__quote@
 
@@ -530,7 +545,7 @@ check-am: all-am
 	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS)
 	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
 check: check-am
-all-am: Makefile $(HEADERS)
+all-am: Makefile $(PROGRAMS) $(HEADERS)
 installdirs:
 install: install-am
 install-exec: install-exec-am
@@ -559,7 +574,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-checkPROGRAMS clean-generic clean-local mostlyclean-am
+clean-am: clean-checkPROGRAMS clean-generic clean-local \
+	clean-noinstPROGRAMS mostlyclean-am
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
@@ -632,19 +648,20 @@ uninstall-am:
 .MAKE: check-am install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am am--refresh check check-TESTS check-am \
-	clean clean-checkPROGRAMS clean-generic clean-local ctags dist \
-	dist-all dist-bzip2 dist-gzip dist-lzma dist-shar dist-tarZ \
-	dist-xz dist-zip distcheck distclean distclean-compile \
-	distclean-generic distclean-tags distcleancheck distdir \
-	distuninstallcheck dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am
+	clean clean-checkPROGRAMS clean-generic clean-local \
+	clean-noinstPROGRAMS ctags dist dist-all dist-bzip2 dist-gzip \
+	dist-lzma dist-shar dist-tarZ dist-xz dist-zip distcheck \
+	distclean distclean-compile distclean-generic distclean-tags \
+	distcleancheck distdir distuninstallcheck dvi dvi-am html \
+	html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
+	uninstall-am
 
 clean-local:
 	-rm -rf *.tmp
