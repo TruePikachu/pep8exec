@@ -1,5 +1,6 @@
 #include "pep8cpu.hpp"
 #include "pep8mem.hpp"
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -108,7 +109,7 @@ void doMenu() {
 	char input[512];
 	cout << mem.getRamSize() << "B RAM   " << mem.getRomSize() << "B ROM\n";
 	while(true) {
-		cout << "(l)oad  e(x)ecute  (d)ump  (t)race  (i)nput  (o)utput  (q)uit: ";
+		cout << "\n(l)oad  e(x)ecute  (d)ump  (t)race  (i)nput  (o)utput  (q)uit: ";
 		input[2]=0;
 		cin.getline(input,sizeof(input));
 		if(cin.eof())
@@ -116,6 +117,7 @@ void doMenu() {
 		switch(toupper(input[0])) {
 			case 'L': doLoad(input+2); break;
 			case 'X': doExecute(); break;
+			case 'D': doDump(input+2); break;
 			case 'I': doInput(input+2); break;
 			case 'O': doOutput(input+2); break;
 			case 'Q': return;
@@ -152,6 +154,36 @@ void doExecute() {
 	cpu.setSP(mem.getUW(0xFFF8));
 	cpu.setPC(0x0000);
 	while(cpu.doInstruction(settings.inputFile?*settings.inputFile:cin,settings.outputFile?*settings.outputFile:cout));
+}
+
+void doDump(const char* rangeC) {
+	string range = rangeC;
+	if(!range.length()) {
+		char buffer[512];
+		cout << "Enter range as %04X-%04X: ";
+		cin.getline(buffer,sizeof(buffer));
+		range=buffer;
+	}
+	unsigned lo,hi;
+	if(2!=sscanf(range.c_str(),"%04X-%04X",&lo,&hi)) {
+		cerr << "Error: Range invalid\n";
+		return;
+	}
+	cout << "DUMP    0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F       ASCII\n\n";
+	for(uint16_t i=lo&0xFFF0;i<=hi;i+=0x10) {
+		printf("%04X:  ",i);
+		for(int j=0;j<16;j++)
+			printf("%02X ",mem.getUB(i|j));
+		cout << ' ';
+		for(int j=0;j<16;j++)
+			if(mem.getUB(i|j)<' ')
+				cout << '.';
+			else if(mem.getUB(i|j)<='~')
+				cout << mem.getUB(i|j);
+			else
+				cout << '.';
+		cout << endl;
+	}
 }
 
 void doInput(const char* fName) {
