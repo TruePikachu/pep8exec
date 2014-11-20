@@ -1,9 +1,12 @@
 #include "pep8mem.hpp"
+#include <cstdio>
 #include <cstring>
 #include <exception>
+#include <istream>
 #include <ostream>
 #include <stdint.h>
 #include <string>
+#include <vector>
 using namespace std;
 
 Pep8DataException::Pep8DataException(std::string str) : whatIs(str) {};
@@ -20,7 +23,7 @@ const char* Pep8DataException::what() const throw() {
 
 //////////
 
-Pep8Memory::Pep8Memory() {
+Pep8Memory::Pep8Memory() : romSize(0) {
 	image = new uint8_t[0x10000];
 }
 
@@ -35,6 +38,7 @@ Pep8Memory::~Pep8Memory() {
 
 Pep8Memory& Pep8Memory::operator=(Pep8Memory o) {
 	delete[] image;
+	romSize=o.romSize;
 	image = new uint8_t[0x10000];
 	memmove(image,o.image,0x10000);
 	return *this;
@@ -46,6 +50,27 @@ const uint8_t* Pep8Memory::getImage() const {
 
 uint8_t* Pep8Memory::getImage() {
 	return image;
+}
+
+Pep8Memory& Pep8Memory::loadOS(std::istream&os) {
+	// Clear the image
+	for(int i=0;i<0x10000;i++)
+		image[i]=0;
+	romSize=0;
+	vector< uint8_t > imageBuffer;
+	char readBuf[4];
+	readBuf[3]=0;
+	uint8_t newByte;
+	while(os.good()) {
+		os.read(readBuf,3);
+		if(!sscanf(readBuf,"%02X",&newByte))
+			break;
+		imageBuffer.push_back(newByte);
+	}
+	for(off_t where=0;where<imageBuffer.size();where++)
+		setUB(where+0x10000-imageBuffer.size(),imageBuffer[where]);
+	romSize=imageBuffer.size();
+	return *this;
 }
 
 int16_t Pep8Memory::getSW(off_t i) const {
@@ -72,6 +97,8 @@ Pep8Memory& Pep8Memory::setSW(off_t i, int16_t n) {
 }
 
 Pep8Memory& Pep8Memory::setUW(off_t i, uint16_t n) {
+	if(!writable(i) || !writable(i+1))
+		return *this;
 	image[i] = n >> 8;
 	if(i==0xFFFF)
 		image[0x0000] = n&0xFF;
@@ -85,8 +112,22 @@ Pep8Memory& Pep8Memory::setSB(off_t i, int8_t n) {
 }
 
 Pep8Memory& Pep8Memory::setUB(off_t i, uint8_t n) {
+	if(!writable(i))
+		return *this;
 	image[i] = n;
 	return *this;
+}
+
+size_t Pep8Memory::getRamSize() const {
+	return 0x10000-romSize;
+}
+
+size_t Pep8Memory::getRomSize() const {
+	return romSize;
+}
+
+bool Pep8Memory::writable(off_t i) const {
+	return i<getRamSize();
 }
 
 //////////
