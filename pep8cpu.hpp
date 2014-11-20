@@ -5,6 +5,7 @@ class Pep8CPU;
 #include <istream>
 #include <ostream>
 #include <stdint.h>
+#include <string>
 
 class Pep8Operand {
 	public:
@@ -28,6 +29,7 @@ class Pep8Operand {
 	public:
 				 Pep8Operand	(Pep8Memory&,uint16_t,AddressMode,const Pep8Register&,uint16_t);
 		AddressMode	getAddrMode	() const;
+		std::string	getFormal	() const;
 		uint16_t	getRef		() const;
 		int16_t		getSW		() const;
 		uint16_t	getUW		() const;
@@ -105,6 +107,15 @@ class Pep8CPU {
 			uint8_t		OP;
 			uint16_t	PAR;
 			}	IR;
+		bool		traceEnabled;
+		bool		tracingLoader;
+		bool		inTrap;
+		std::ostream*	traceFile;
+		bool		traceTrap;
+		bool		traceLoad;
+		bool		traceProg;
+		static const char* getMnemon	(uint8_t);
+		bool		doTrace		() const;
 	public:
 					 Pep8CPU	(Pep8Memory&);
 		const Pep8Memory&	getMemory	() const;

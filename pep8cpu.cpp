@@ -5,12 +5,29 @@
 #include <ostream>
 #include <stdexcept>
 #include <stdint.h>
+#include <string>
 using namespace std;
 
 Pep8Operand::Pep8Operand(Pep8Memory&memory,uint16_t value,AddressMode type,const Pep8Register&X,uint16_t SP) : memory(memory),value(value),type(type),x(X.getUW()),sp(SP) {}
 
 Pep8Operand::AddressMode Pep8Operand::getAddrMode() const {
 	return type;
+}
+
+std::string Pep8Operand::getFormal() const {
+	string result;
+	result = value;
+	switch(type) {
+		case ADRi:	return result+",i";
+		case ADRd:	return result+",d";
+		case ADRn:	return result+",n";
+		case ADRs:	return result+",s";
+		case ADRsf:	return result+",sf";
+		case ADRx:	return result+",x";
+		case ADRsx:	return result+",sx";
+		case ADRsxf:	return result+",sxf";
+		default:	return "";
+	}
 }
 
 uint16_t Pep8Operand::getRef() const {
@@ -84,11 +101,37 @@ Pep8Operand& Pep8Operand::setUB(uint8_t v) {
 
 //////////
 
+const char* Pep8CPU::getMnemon(uint8_t opByte) {
+	const char *mnemonA[40] = {"STOP","RETTR","MOVSPA","MOVFLGA","BR","BR","BRLE","BRLE","BRLT","BRLT","BREQ","BREQ","BRNE","BRNE","BRGE","BRGE","BRGT","BRGT","BRV","BRV","BRC","BRC","CALL","CALL","NOTA","NOTX","NEGA","NEGX","ASLA","ASLX","ASRA","ASRX","ROLA","ROLX","RORA","RORX","NOP0","NOP1","NOP2","NOP3"};
+	const char *mnemonB[27] = {"DECI","DECO","STRO","CHARI","CHARO","RETn","ADDSP","SUBSP","ADDA","ADDX","SUBA","SUBX","ANDA","ANDX","ORA","ORX","CPA","CPX","LDA","LDX","LDBYTEA","LDBYTEX","STA","STX","STBYTEA","STBYTEX"};
+	const char *rets[8] = {"RET0","RET1","RET2","RET3","RET4","RET5","RET6","RET7"};
+	if(opByte<40)
+		return mnemonA[opByte];
+	if(opByte&0xF8 == 0x58)
+		return rets[opByte&7];
+	return mnemonB[opByte>>3];
+}
+
+bool Pep8CPU::doTrace() const {
+	if(!traceEnabled)
+		return false;
+	if(tracingLoader)
+		return traceLoad;
+	else
+		return inTrap?traceTrap:traceProg;
+}
+
 Pep8CPU::Pep8CPU(Pep8Memory&memory) : memory(memory) {
 	PC=0;
 	SP=0;
 	IR.OP=0;
 	IR.PAR=0;
+	inTrap=false;
+	traceFile=false;
+	traceTrap=false;
+	traceLoad=false;
+	traceProg=false;
+	traceEnabled=false;
 }
 
 const Pep8Memory& Pep8CPU::getMemory() const {
@@ -142,6 +185,7 @@ Pep8CPU& Pep8CPU::setSP(uint16_t newSP) {
 }
 
 bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
+	char traceBuffer[128];
 	// Fetch
 	IR.OP=memory.getUB(PC);
 	// Read&Increment
@@ -157,6 +201,10 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 		inst=(Instruction)(IR.OP&0xF8);
 	else
 		inst=(Instruction)(IR.OP&0xF0);
+	if(doTrace()) {
+		sprintf(traceBuffer,"%04X  %-8s ",PC-1,getMnemon(IR.OP));
+		*traceFile << traceBuffer;
+	}
 	Pep8Operand::AddressMode addr;
 	switch(inst) {
 		case BR:
@@ -213,10 +261,14 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 		else
 			r=&A;
 	Pep8Operand operand(memory,IR.PAR,addr,X,SP);
+	if(doTrace()) {
+		sprintf(traceBuffer,"%-10s%02X%04X",operand.getFormal().c_str(),IR.OP,IR.PAR);
+		*traceFile << traceBuffer;
+	}
 	uint16_t tmpUWORD;
+	bool willTrap = inTrap;
 	switch(inst) {
 		case STOP:
-			return false;
 			break;
 		case RETTR:
 			NZVC.setBits(0,3,memory.getUW(SP));
@@ -224,6 +276,7 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 			X.setUW(memory.getUW(SP+3));
 			PC=memory.getUW(SP+5);
 			SP=memory.getUW(SP+7);
+			willTrap=false;
 			break;
 		case MOVSPA:
 			A.setUW(SP);
@@ -319,6 +372,7 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 				memory.setUB(T-10,NZVC.getBits(0,3));
 				SP = T-10;
 				PC = memory.getUW(0xFFFE);
+				willTrap=true;
 				break;	}
 		case CHARI:
 			is.peek();
@@ -405,8 +459,13 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 			throw logic_error(errorBuf);
 	}
 
+	if(doTrace()) {
+		sprintf(traceBuffer,"%04X   %04X    %04X    %i %i %i %i   %04X\n",A.getUW(),X.getUW(),SP,NZVC.getN(),NZVC.getZ(),NZVC.getV(),NZVC.getC(),(operand.getAddrMode()!=operand.ADRnone)?operand.getUW():0);
+		*traceFile << traceBuffer;
+	}
+	inTrap = willTrap;
 	// ReturnValue
-	return inst!=STOP;
+	return (inst!=STOP);
 }
 
 bool Pep8CPU::doInstruction(std::istream&is,std::ostream&os,uint16_t where) {
