@@ -24,6 +24,8 @@ struct pSettings {	std::istream*	inputFile;
 Pep8Memory	mem;
 Pep8CPU		cpu(mem);
 
+void doMenu();
+
 int main(int argc, char *argv[]) {
 	string osFilename = PKGDIR "/pep8os.pepo";
 	string imageName;
@@ -90,6 +92,39 @@ int main(int argc, char *argv[]) {
 		while(cpu.doInstruction(*settings.inputFile,*settings.outputFile));
 		return 0;
 	}
-	cerr << "ERROR: Menu unimplemented\n";
-	return 1;
+	doMenu();
+	return 0;
+}
+
+void doMenu() {
+	char input[512];
+	cout << mem.getRamSize() << "B RAM   " << mem.getRomSize() << "B ROM\n";
+	while(true) {
+		cout << "(l)oad  e(x)ecute  (d)ump  (t)race  (i)nput  (o)utput  (q)uit: ";
+		cin.getline(input,sizeof(input));
+		if(cin.eof())
+			break;
+		switch(toupper(input[0])) {
+			case 'L': {
+					clog << "TODO: LOAD\n";	// TODO
+				  } break;
+			case 'X': {
+					clog << "TODO: EXECUTE\n"; // TODO
+				  } break;
+			case 'D': {
+					clog << "TODO: DUMP\n"; // TODO
+				  } break;
+			case 'T': {
+					clog << "TODO: TRACE\n"; // TODO
+				  } break;
+			case 'I': {
+					clog << "TODO: INPUT\n"; // TODO
+				  } break;
+			case 'O': {
+					clog << "TODO: OUTPUT\n"; // TODO
+				  } break;
+			case 'Q': return;
+			default: cout << "Invalid command.\n";
+		}
+	}
 }
