@@ -339,7 +339,7 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 			SP += operand.getUW();
 			NZVC.setN((int16_t)SP < 0);
 			NZVC.setZ(SP==0);
-			NZVC.setV(((int)tmpUWORD+operand.getUW() < -0x8000)||((int)tmpUWORD+operand.getUW() > 0x7FFF));
+			NZVC.setV((((int)tmpUWORD+operand.getSW() < -0x8000)||((int)tmpUWORD+operand.getSW() > 0x7FFF))^(tmpUWORD>>15));
 			NZVC.setC(((int)tmpUWORD+operand.getUW() < 0) || ((int)tmpUWORD+operand.getUW() > 0xFFFF));
 			break;
 		case SUBSP:
@@ -347,7 +347,7 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 			SP -= operand.getUW();
 			NZVC.setN((int16_t)SP < 0);
 			NZVC.setZ(SP==0);
-			NZVC.setV(((int)tmpUWORD-operand.getUW() < -0x8000)||((int)tmpUWORD-operand.getUW() > 0x7FFF));
+			NZVC.setV((((int)tmpUWORD-operand.getSW() < -0x8000)||((int)tmpUWORD-operand.getSW() > 0x7FFF))^(tmpUWORD>>15));
 			NZVC.setC(((int)tmpUWORD-operand.getUW() < 0) || ((int)tmpUWORD-operand.getUW() > 0xFFFF));
 			break;
 		case ADDr:
@@ -355,7 +355,7 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 			r->setUW(tmpUWORD+operand.getUW());
 			NZVC.setN(r->getSW() < 0);
 			NZVC.setZ(r->getUW()==0);
-			NZVC.setV(((int)tmpUWORD+operand.getUW() < -0x8000)||((int)tmpUWORD+operand.getUW() > 0x7FFF));
+			NZVC.setV((((int)tmpUWORD+operand.getSW() < -0x8000)||((int)tmpUWORD+operand.getSW() > 0x7FFF))^(tmpUWORD>>15));
 			NZVC.setC(((int)tmpUWORD+operand.getUW() < 0) || ((int)tmpUWORD+operand.getUW() > 0xFFFF));
 			break;
 		case SUBr:
@@ -363,7 +363,7 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 			r->setUW(tmpUWORD-operand.getUW());
 			NZVC.setN(r->getSW() < 0);
 			NZVC.setZ(r->getUW()==0);
-			NZVC.setV(((int)tmpUWORD-operand.getUW() < -0x8000)||((int)tmpUWORD-operand.getUW() > 0x7FFF));
+			NZVC.setV((((int)tmpUWORD-operand.getSW() < -0x8000)||((int)tmpUWORD-operand.getSW() > 0x7FFF))^(tmpUWORD>>15));
 			NZVC.setC(((int)tmpUWORD-operand.getUW() < 0) || ((int)tmpUWORD-operand.getUW() > 0xFFFF));
 			break;
 		case ANDr:

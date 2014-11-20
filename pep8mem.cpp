@@ -189,38 +189,38 @@ Pep8Bits& Pep8Bits::setBits(int a,int b,unsigned n) {
 Pep8Flags::Pep8Flags() : Pep8Bits(4) {};
 
 bool Pep8Flags::getN() const {
-	return getBit(3);
-}
-
-bool Pep8Flags::getZ() const {
-	return getBit(2);
-}
-
-bool Pep8Flags::getV() const {
-	return getBit(1);
-}
-
-bool Pep8Flags::getC() const {
 	return getBit(0);
 }
 
+bool Pep8Flags::getZ() const {
+	return getBit(1);
+}
+
+bool Pep8Flags::getV() const {
+	return getBit(2);
+}
+
+bool Pep8Flags::getC() const {
+	return getBit(3);
+}
+
 Pep8Flags& Pep8Flags::setN(bool b) {
-	setBit(3,b);
+	setBit(0,b);
 	return *this;
 }
 
 Pep8Flags& Pep8Flags::setZ(bool b) {
-	setBit(2,b);
-	return *this;
-}
-
-Pep8Flags& Pep8Flags::setV(bool b) {
 	setBit(1,b);
 	return *this;
 }
 
+Pep8Flags& Pep8Flags::setV(bool b) {
+	setBit(2,b);
+	return *this;
+}
+
 Pep8Flags& Pep8Flags::setC(bool b) {
-	setBit(0,b);
+	setBit(3,b);
 	return *this;
 }
 
