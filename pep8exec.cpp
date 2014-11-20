@@ -21,6 +21,8 @@ struct pSettings {	std::istream*	inputFile;
 			false,
 			false,
 			true};
+Pep8Memory	mem;
+Pep8CPU		cpu(mem);
 
 int main(int argc, char *argv[]) {
 	string osFilename = PKGDIR "/pep8os.pepo";
@@ -64,5 +66,30 @@ int main(int argc, char *argv[]) {
 			exit(1);
 		}
 	}
-	return 0;
+	// Load OS
+	ifstream os(osFilename.c_str());
+	mem.loadOS(os);
+	os.close();
+	// Handle execute mode
+	if(autorun) {
+		if(!imageName.length()) {
+			cerr << "ERROR: -x/--execute requires a program name!\n";
+			return 1;
+		}
+		ifstream src(imageName.c_str());
+		cpu.setSP(mem.getUW(0xFFFA));
+		cpu.setPC(mem.getUW(0xFFFC));
+		while(cpu.doInstruction(src,clog));
+		src.close();
+		cpu.setSP(mem.getUW(0xFFF8));
+		cpu.setPC(0x0000);
+		if(!settings.inputFile)
+			settings.inputFile=&cin;
+		if(!settings.outputFile)
+			settings.outputFile=&cout;
+		while(cpu.doInstruction(*settings.inputFile,*settings.outputFile));
+		return 0;
+	}
+	cerr << "ERROR: Menu unimplemented\n";
+	return 1;
 }
