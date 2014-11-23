@@ -74,6 +74,8 @@ int main(int argc, char *argv[]) {
 	ifstream os(osFilename.c_str());
 	mem.loadOS(os);
 	os.close();
+	if(settings.doTrace)
+		cpu.setTrace(settings.traceProg,settings.traceTrap,settings.traceLoad,settings.traceFile);
 	// Handle execute mode
 	if(autorun) {
 		if(!imageName.length()) {
@@ -81,17 +83,13 @@ int main(int argc, char *argv[]) {
 			return 1;
 		}
 		ifstream src(imageName.c_str());
-		cpu.setSP(mem.getUW(0xFFFA));
-		cpu.setPC(mem.getUW(0xFFFC));
-		while(cpu.doInstruction(src,clog));
+		cpu.doLoader(src,clog);
 		src.close();
-		cpu.setSP(mem.getUW(0xFFF8));
-		cpu.setPC(0x0000);
 		if(!settings.inputFile)
 			settings.inputFile=&cin;
 		if(!settings.outputFile)
 			settings.outputFile=&cout;
-		while(cpu.doInstruction(*settings.inputFile,*settings.outputFile));
+		cpu.doProgram(*settings.inputFile,*settings.outputFile);
 		return 0;
 	}
 	doMenu();
@@ -144,16 +142,12 @@ void doLoad(const char* fName) {
 			return;
 		}
 	}
-	cpu.setSP(mem.getUW(0xFFFA));
-	cpu.setPC(mem.getUW(0xFFFC));
-	while(cpu.doInstruction(source,clog));
+	cpu.doLoader(source,clog);
 	source.close();
 }
 
 void doExecute() {
-	cpu.setSP(mem.getUW(0xFFF8));
-	cpu.setPC(0x0000);
-	while(cpu.doInstruction(settings.inputFile?*settings.inputFile:cin,settings.outputFile?*settings.outputFile:cout));
+	cpu.doProgram(settings.inputFile?*settings.inputFile:cin,settings.outputFile?*settings.outputFile:cout);
 }
 
 void doDump(const char* rangeC) {

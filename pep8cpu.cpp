@@ -17,7 +17,9 @@ Pep8Operand::AddressMode Pep8Operand::getAddrMode() const {
 
 std::string Pep8Operand::getFormal() const {
 	string result;
-	result = value;
+	char buf[32];
+	sprintf(buf,"%04X",value);
+	result = buf;
 	switch(type) {
 		case ADRi:	return result+",i";
 		case ADRd:	return result+",d";
@@ -110,7 +112,7 @@ const char* Pep8CPU::getMnemon(uint8_t opByte) {
 		return mnemonA[opByte];
 	if(opByte&0xF8 == 0x58)
 		return rets[opByte&7];
-	return mnemonB[opByte>>3];
+	return mnemonB[(opByte-0x30)>>3];
 }
 
 bool Pep8CPU::doTrace() const {
@@ -263,7 +265,7 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 			r=&A;
 	Pep8Operand operand(memory,IR.PAR,addr,X,SP);
 	if(doTrace()) {
-		sprintf(traceBuffer,"%-10s%02X%04X",operand.getFormal().c_str(),IR.OP,IR.PAR);
+		sprintf(traceBuffer,"%-10s%02X%04X   ",operand.getFormal().c_str(),IR.OP,IR.PAR);
 		*traceFile << traceBuffer;
 	}
 	uint16_t tmpUWORD;
@@ -482,6 +484,12 @@ Pep8CPU& Pep8CPU::doLoader(std::istream&is,std::ostream&os) {
 	bool nullTraceFile = !traceFile;
 	if(nullTraceFile)
 		traceFile=&clog;
+	if(traceLoad)
+		*traceFile <<
+"-------------------------------------------------------------------------\n"
+"               Oprnd     Instr           Index   Stack   Status\n"
+"Addr  Mnemon   Spec       Reg     Accum   Reg   Pointer  N Z V C  Operand\n"
+"-------------------------------------------------------------------------\n";
 	while(doInstruction(is,os));
 	if(nullTraceFile)
 		traceFile=NULL;
@@ -497,6 +505,12 @@ Pep8CPU& Pep8CPU::doProgram(std::istream&is,std::ostream&os) {
 	bool nullTraceFile = !traceFile;
 	if(nullTraceFile)
 		traceFile=&clog;
+	if(traceProg || traceTrap)
+		*traceFile <<
+"-------------------------------------------------------------------------\n"
+"               Oprnd     Instr           Index   Stack   Status\n"
+"Addr  Mnemon   Spec       Reg     Accum   Reg   Pointer  N Z V C  Operand\n"
+"-------------------------------------------------------------------------\n";
 	while(doInstruction(is,os));
 	if(nullTraceFile)
 		traceFile=NULL;
