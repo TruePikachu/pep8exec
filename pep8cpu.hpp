@@ -132,6 +132,9 @@ class Pep8CPU {
 		Pep8CPU&		setSP		(uint16_t);
 		bool			doInstruction	(std::istream&,std::ostream&);	// Returns FALSE on STOP
 		bool			doInstruction	(std::istream&,std::ostream&,uint16_t);	// Set PC first
+		Pep8CPU&		doLoader	(std::istream&,std::ostream&);
+		Pep8CPU&		doProgram	(std::istream&,std::ostream&);
+
 };
 
 #endif

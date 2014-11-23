@@ -1,6 +1,7 @@
 #include "pep8cpu.hpp"
 #include "pep8mem.hpp"
 #include <cstdio>
+#include <iostream>
 #include <istream>
 #include <ostream>
 #include <stdexcept>
@@ -471,4 +472,34 @@ bool Pep8CPU::doInstruction(std::istream&is, std::ostream&os) {
 bool Pep8CPU::doInstruction(std::istream&is,std::ostream&os,uint16_t where) {
 	PC=where;
 	return doInstruction(is,os);
+}
+
+Pep8CPU& Pep8CPU::doLoader(std::istream&is,std::ostream&os) {
+	SP=memory.getUW(0xFFFA);
+	PC=memory.getUW(0xFFFC);
+	traceEnabled=true;
+	tracingLoader=true;
+	bool nullTraceFile = !traceFile;
+	if(nullTraceFile)
+		traceFile=&clog;
+	while(doInstruction(is,os));
+	if(nullTraceFile)
+		traceFile=NULL;
+	traceEnabled=false;
+	return *this;
+}
+
+Pep8CPU& Pep8CPU::doProgram(std::istream&is,std::ostream&os) {
+	SP=memory.getUW(0xFFF8);
+	PC=0x0000;
+	traceEnabled=true;
+	tracingLoader=false;
+	bool nullTraceFile = !traceFile;
+	if(nullTraceFile)
+		traceFile=&clog;
+	while(doInstruction(is,os));
+	if(nullTraceFile)
+		traceFile=NULL;
+	traceEnabled=false;
+	return *this;
 }
