@@ -503,3 +503,11 @@ Pep8CPU& Pep8CPU::doProgram(std::istream&is,std::ostream&os) {
 	traceEnabled=false;
 	return *this;
 }
+
+Pep8CPU& Pep8CPU::setTrace(bool program,bool trap,bool load,std::ostream* strm) {
+	traceProg=program;
+	traceTrap=trap;
+	traceLoad=load;
+	traceFile=strm;
+	return *this;
+}

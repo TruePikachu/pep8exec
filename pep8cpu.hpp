@@ -134,6 +134,7 @@ class Pep8CPU {
 		bool			doInstruction	(std::istream&,std::ostream&,uint16_t);	// Set PC first
 		Pep8CPU&		doLoader	(std::istream&,std::ostream&);
 		Pep8CPU&		doProgram	(std::istream&,std::ostream&);
+		Pep8CPU&		setTrace	(bool program=false,bool trap=false,bool load=false,std::ostream* =NULL);
 
 };
 
